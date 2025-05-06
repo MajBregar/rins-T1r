@@ -1,0 +1,2 @@
+geometry_msgs/PointStamped position
+string color
