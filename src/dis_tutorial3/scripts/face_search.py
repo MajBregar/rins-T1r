@@ -70,7 +70,7 @@ class InspectionNavigator(Node):
         )
         
         self.odom_pose = None
-        self.sub_odom = self.create_subscription(Odometry, '/odom', self.odom_callback, qos_profile_sensor_data)
+        #self.sub_odom = self.create_subscription(Odometry, '/odom', self.odom_callback, qos_profile_sensor_data)
 
         self.occupancy = None
         self.resolution = None
