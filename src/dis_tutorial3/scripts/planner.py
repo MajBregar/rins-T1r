@@ -66,8 +66,35 @@ class Planner(Node):
         self.dist_transform = cv2.distanceTransform(binary, cv2.DIST_L2, 5)
 
         # Detect walls and lines
-        edges = cv2.Canny((occ == 0).astype(np.uint8) * 255, 50, 150)
-        lines = cv2.HoughLinesP(edges, 0.1, np.pi / 180, threshold=5, minLineLength=5, maxLineGap=5)
+        wall_binary = (occ == 0.0).astype(np.uint8)  # Walls are 0.0
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        eroded_walls = cv2.erode(wall_binary, kernel, iterations=1)
+        # Canny edge detection
+        edges = cv2.Canny(eroded_walls * 255, 50, 150)
+
+        # Find contours
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Create a blank image to hold filtered edges
+        filtered_edges = np.zeros_like(edges)
+
+        # Draw only contours with length > 100 pixels
+        for c in contours:
+            if cv2.arcLength(c, closed=False) > 100:
+                cv2.drawContours(filtered_edges, [c], -1, 255, 1)
+
+        edges = filtered_edges
+
+        
+        lines = cv2.HoughLinesP(
+            edges,
+            rho=1.0,                # Increase from 0.1 to 1.0 to reduce sensitivity
+            theta=np.pi / 180,      # Keep as 1 degree resolution
+            threshold=25,           # Increase to require more inliers to form a line
+            minLineLength=20,       # Increase to avoid short fragments
+            maxLineGap=20           # Increase to bridge small gaps
+        )
+        
         if lines is None:
             self.get_logger().warn("No walls detected.")
             return
@@ -76,6 +103,17 @@ class Planner(Node):
         for l in lines:
             all_lines.extend(self.split_line(*l[0], self.max_line_length_m, self.resolution))
 
+        line_vis = cv2.cvtColor((edges > 0).astype(np.uint8) * 255, cv2.COLOR_GRAY2BGR)
+
+        if lines is not None:
+            for l in lines:
+                x1, y1, x2, y2 = l[0]
+                color = tuple(np.random.randint(0, 255, 3).tolist())  # Random RGB
+                cv2.line(line_vis, (x1, y1), (x2, y2), color, 1)
+
+
+            cv2.imshow("Hough Lines", line_vis)
+            cv2.waitKey(1)
         poses, _ = self.generate_camera_targets(all_lines, occ, self.resolution, origin, height, start_target_id=1000)
         markers = self.generate_markers(poses)
         self.pub_markers.publish(markers)
@@ -158,16 +196,17 @@ class Planner(Node):
         markers = MarkerArray()
         cam_marker_id = 0
 
-        ring_goals = [
-            {'pose': (2.41, -1.24, math.radians(90)), 'label': 'green'},
-            {'pose' : (0.79, -1.91, math.radians(0)), 'label' : 'green'},
-            {'pose': (0.89, 1.47, math.radians(-90)), 'label': 'blue'},
-            {'pose': (1.93, 1.96, math.radians(180)), 'label': 'red'},
-            {'pose': (0.04, -0.48, math.radians(180)), 'label': 'red'},
-            {'pose': (-0.38, -1.72, math.radians(90)), 'label': 'black'},
-            {'pose': (-0.94, 0.40, math.radians(95)), 'label': 'black'},
-            {'pose': (-1.67, 3.78, math.radians(-90)), 'label': 'black'}
-        ]
+        # ring_goals = [
+        #     {'pose': (2.41, -1.24, math.radians(90)), 'label': 'green'},
+        #     {'pose' : (0.79, -1.91, math.radians(0)), 'label' : 'green'},
+        #     {'pose': (0.89, 1.47, math.radians(-90)), 'label': 'blue'},
+        #     {'pose': (1.93, 1.96, math.radians(180)), 'label': 'red'},
+        #     {'pose': (0.04, -0.48, math.radians(180)), 'label': 'red'},
+        #     {'pose': (-0.38, -1.72, math.radians(90)), 'label': 'black'},
+        #     {'pose': (-0.94, 0.40, math.radians(95)), 'label': 'black'},
+        #     {'pose': (-1.67, 3.78, math.radians(-90)), 'label': 'black'}
+        # ]
+        ring_goals = []
         
         for ring in ring_goals:
             x, y, yaw = ring['pose']
