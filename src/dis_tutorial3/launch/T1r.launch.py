@@ -10,8 +10,8 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 
 # Initial position of the robot on the map (adjust to match real robot start)
-px = 264
-py = 314
+px = 200
+py = 345
 yaw_deg = 90
 
 # Map image info (adjust to match your actual map.pgm)
@@ -43,14 +43,14 @@ def generate_launch_description():
     pose_msg = (
         f'{{"header": {{"frame_id": "map"}}, '
         f'"pose": {{"pose": {{"position": {{"x": {x:.2f}, "y": {y:.2f}, "z": 0.0}}, '
-        f'"orientation": {{"x": 0.0, "y": 0.0, "z": {qz:.4f}, "w": {qw:.4f}}}}}, '
+        f'"orientation": {{"z": {qz:.4f}, "w": {qw:.4f}}}}}, '
         f'"covariance": [0.25, 0, 0, 0, 0, 0, '
         f'0, 0.25, 0, 0, 0, 0, '
         f'0, 0, 0.25, 0, 0, 0, '
         f'0, 0, 0, 0.0685, 0, 0, '
         f'0, 0, 0, 0, 0.0685, 0, '
         f'0, 0, 0, 0, 0, 0.07]}}}}'
-)
+    )
 
     initial_pose_cmd = [
         'ros2', 'topic', 'pub', '--once',
@@ -93,6 +93,22 @@ def generate_launch_description():
         ]
     )
 
+    spin_node = TimerAction(
+		period=10.0,  # Starts 2s after initial pose pub (which is 2s after AMCL)
+		actions=[
+			Node(
+				package='dis_tutorial3',
+				executable='loc_spin.py',
+				name='loc_spin',
+				output='screen',
+				parameters=[
+					{'angular_speed': 0.5},
+					{'spins': 2}
+				]
+			)
+		]
+	)
+
     # RViz
     rviz_config_path = PathJoinSubstitution([pkg_dis_tutorial3, 'rviz', 'exported_config.rviz'])
     rviz_node = Node(
@@ -102,6 +118,36 @@ def generate_launch_description():
         arguments=['-d', rviz_config_path],
         output='screen'
     )
+    
+    planner_node = TimerAction(
+        period=20.0,
+        actions=[Node(
+            package='dis_tutorial3',
+            executable='planner.py',
+            name='inspection_planner',
+            output='screen'
+        )]
+    )
+    # Step 2: detect_people.py
+    detect_people_node = TimerAction(
+        period=22.0,
+        actions=[Node(
+            package='dis_tutorial3',
+            executable='detect_people_haar.py',
+            name='detect_people_haar',
+            output='screen'
+        )]
+    )
+    # Step 4: face_search.py
+    face_search_node = TimerAction(
+        period=24.0,
+        actions=[Node(
+            package='dis_tutorial3',
+            executable='face_search.py',
+            name='face_search',
+            output='screen'
+        )]
+    )
 
     return LaunchDescription([
         use_sim_time_arg,
@@ -109,5 +155,9 @@ def generate_launch_description():
         nav2_launch,
         delayed_localization_launch,
         initial_pose_pub,
+        spin_node,
         rviz_node,
+        planner_node,
+        detect_people_node,
+        face_search_node
     ])

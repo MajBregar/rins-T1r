@@ -33,7 +33,7 @@ class Planner(Node):
         # Marker generation settings
         self.cam_offset = 0.5
         self.target_offset = 0.2
-        self.spacing = 0.3
+        self.spacing = 0.2
         self.max_line_length_m = 2.0
         self.min_clearance_m = 0.3
 
@@ -105,15 +105,15 @@ class Planner(Node):
 
         line_vis = cv2.cvtColor((edges > 0).astype(np.uint8) * 255, cv2.COLOR_GRAY2BGR)
 
-        if lines is not None:
-            for l in lines:
-                x1, y1, x2, y2 = l[0]
-                color = tuple(np.random.randint(0, 255, 3).tolist())  # Random RGB
-                cv2.line(line_vis, (x1, y1), (x2, y2), color, 1)
+        # if lines is not None:
+        #     for l in lines:
+        #         x1, y1, x2, y2 = l[0]
+        #         color = tuple(np.random.randint(0, 255, 3).tolist())  # Random RGB
+        #         cv2.line(line_vis, (x1, y1), (x2, y2), color, 1)
 
 
-            cv2.imshow("Hough Lines", line_vis)
-            cv2.waitKey(1)
+        #     cv2.imshow("Hough Lines", line_vis)
+        #     cv2.waitKey(1)
         poses, _ = self.generate_camera_targets(all_lines, occ, self.resolution, origin, height, start_target_id=1000)
         markers = self.generate_markers(poses)
         self.pub_markers.publish(markers)

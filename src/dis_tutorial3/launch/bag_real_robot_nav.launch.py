@@ -15,12 +15,12 @@ import math
 #README - launches the navigation and localization stack from bag and localizes based of the starting position
 
 #bag dir
-bag_dir_name = 'bag_long'
+bag_dir_name = 'bag_giga'
 
 #start position of robot on map (when the bag was recorded)
 px = 264 
 py = 314
-yaw_deg = -10
+yaw_deg = 90
 
 #map info from map.pgm
 image_height = 426

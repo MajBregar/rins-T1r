@@ -36,11 +36,12 @@ install(DIRECTORY
 )
 
 install(PROGRAMS
-  scripts/detect_people.py
   scripts/robot_commander.py
   scripts/planner.py
   scripts/face_search.py
   scripts/detect_rings.py
+  scripts/detect_people_haar.py
+  scripts/loc_spin.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

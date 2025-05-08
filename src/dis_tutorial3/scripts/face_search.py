@@ -459,7 +459,7 @@ class InspectionNavigator(Node):
 
 
 
-    def is_visible(self, robot_pose, target, normal, fov_deg=90, min_angle_deg=45):
+    def is_visible(self, robot_pose, target, normal, fov_deg=60, min_angle_deg=45):
         if self.occupancy is None or self.resolution is None or self.origin is None:
             return False
 
